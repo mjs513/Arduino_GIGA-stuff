@@ -23,6 +23,7 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 #define SCALE 2
 
 #include <camera.h>
+#include <zephyr/drivers/video.h>
 
 Camera cam;
 
@@ -77,7 +78,7 @@ void setup() {
   //cam.debug(Serial);
 
   printk("Before setSnapshotMode call\n");
-  cam.setSnapshotMode(true);
+  //cam.setSnapshotMode(true);
   printk("CONFIG_VIDEO_BUFFER_POOL_NUM_MAX: %u\n", CONFIG_VIDEO_BUFFER_POOL_NUM_MAX);
   printk("Before cam.begin call\n");
   if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_VIEW_WIDTH, CAMERA_VIEW_HEIGHT, CAMERA_RGB565, true)) {

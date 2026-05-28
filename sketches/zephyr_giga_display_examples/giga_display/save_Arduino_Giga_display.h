@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+#if 0 
 #ifndef __GIGA_DISPLAY_H__
 #define __GIGA_DISPLAY_H__
 
@@ -121,3 +122,4 @@ public:
 };
 
 #endif // __GIGA_DISPLAY_H__
+#endif

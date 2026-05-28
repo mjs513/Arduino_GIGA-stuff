@@ -56,6 +56,47 @@
 #include <api/itoa.h>
 #include <zephyr/kernel.h>
 
+class ExtendendTransferSPI : public arduino::ZephyrSPI {
+public:
+  /*virtual */ int transfer(const void *txBuf, void *rxBuf, size_t count);
+  /*virtual */ int transfer16(const void *txBuf, void *rxBuf, size_t count);
+};
+
+int ExtendendTransferSPI::transfer(const void *txBuf, void *rxBuf, size_t count) {
+  const struct spi_buf tx_buf = {.buf = (void*)txBuf, .len = count};
+  const struct spi_buf_set tx_buf_set = {
+    .buffers = &tx_buf,
+    .count = 1,
+  };
+
+  const struct spi_buf rx_buf = {.buf = rxBuf, .len = count};
+  const struct spi_buf_set rx_buf_set = {
+    .buffers = &rx_buf,
+    .count = 1,
+  };
+
+  return spi_transceive(spi_dev, &config, &tx_buf_set, rxBuf ? &rx_buf_set : nullptr);
+}
+
+int ExtendendTransferSPI::transfer16(const void *txBuf, void *rxBuf, size_t count) {
+  const struct spi_buf tx_buf = {.buf = (void*)txBuf, .len = count};
+  const struct spi_buf_set tx_buf_set = {
+    .buffers = &tx_buf,
+    .count = 1,
+  };
+
+  const struct spi_buf rx_buf = {.buf = rxBuf, .len = count};
+  const struct spi_buf_set rx_buf_set = {
+    .buffers = &rx_buf,
+    .count = 1,
+  };
+
+  return spi_transceive(spi_dev, &config16, &tx_buf_set, rxBuf ? &rx_buf_set : nullptr);
+}
+
+
+
+
 #define WIDTH _screenWidth
 #define HEIGHT _screenHeight
 #define CBALLOC (_screenHeight * _screenWidth * 2)
@@ -445,6 +486,42 @@ void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
   // printf("\tfillRect - end\n");
 }
 
+static void spi_fillrect_callback (const struct device *dev, int result, void *data) {
+  UNUSED(dev);
+  UNUSED(result);
+  *((volatile bool *)data) = true;
+}
+
+void ST77XX_zephyr::fillRect_async(int16_t x, int16_t y, int16_t w, int16_t h,
+                           uint16_t color) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  volatile bool async_cb_called = false;
+
+  uint32_t count_pixels = w * h;
+  uint16_t array_fill_count = min(count_pixels, sizeof(s_row_buff)/sizeof(s_row_buff[0]));
+  struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(array_fill_count * 2 )};
+  const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+
+  for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = color;
+  while (count_pixels) {
+    async_cb_called = false;
+    spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &spi_fillrect_callback, (void*)&async_cb_called);
+    while (!async_cb_called) {}
+
+    count_pixels -= array_fill_count;
+    if (count_pixels < array_fill_count) {
+      array_fill_count = count_pixels;
+      tx_buf.len = (size_t)(array_fill_count * 2 );
+    }
+  }
+
+  endSPITransaction();
+}
+
+
 // SPI Transfer functions only.
 void ST77XX_zephyr::fillRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
@@ -502,7 +579,7 @@ void ST77XX_zephyr::fillRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w,
   uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
   for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
   for (y = h; y > 0; y--) {
-    ((ZephyrSPI *)_pspi)->transfer(s_row_buff, nullptr, w * 2);
+    ((ExtendendTransferSPI *)_pspi)->transfer(s_row_buff, nullptr, w * 2);
   }
   endSPITransaction();
 }
@@ -1014,6 +1091,31 @@ void ST77XX_zephyr::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
   endSPITransaction();
 }
 
+static void spi_writerect_callback (const struct device *dev, int result, void *data) {
+  UNUSED(dev);
+  UNUSED(result);
+  *((volatile bool *)data) = true;
+}
+
+void ST77XX_zephyr::writeRect_async(int16_t x, int16_t y, int16_t w, int16_t h,
+                            const uint16_t *pcolors) {
+
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2 )};
+  const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+  volatile bool async_cb_called = false;
+
+  spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &spi_writerect_callback, (void*)&async_cb_called );
+  while (!async_cb_called) {}
+
+  endSPITransaction();
+}
+
+
 void ST77XX_zephyr::writeRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors) {
   beginSPITransaction();
   setAddr(x, y, x + w - 1, y + h - 1);
@@ -1065,7 +1167,7 @@ void ST77XX_zephyr::writeRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w
   setAddr(x, y, x + w - 1, y + h - 1);
   writecommand_cont(ST77XX_RAMWR);
   setDataMode();
-  ((ZephyrSPI *)_pspi)->transfer16(pcolors, nullptr, w * h);
+  ((ExtendendTransferSPI *)_pspi)->transfer16(pcolors, nullptr, w * h);
   endSPITransaction();
 }
 

@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-//#define INCLUDE_LARGER_ARIAL
+#define INCLUDE_LARGER_ARIAL
 
 extern const ILI9341_t3_font_t Arial_8;
 extern const ILI9341_t3_font_t Arial_9;

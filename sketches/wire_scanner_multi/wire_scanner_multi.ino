@@ -36,7 +36,7 @@ void setup() {
 #if WIRE_INTERFACES_COUNT >= 4
   Wire3.begin();
 #endif
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial);   // Wait for Arduino Serial Monitor
   Serial.println(F("\nI2C Scanner"));
 }

@@ -173,6 +173,7 @@ public:
   // Several variants of fillRect
   void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
 
+  void fillRect_async(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
   // use only Arduino SPI functions.
   void fillRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
   void fillRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
@@ -252,6 +253,7 @@ public:
   void (*_write_rect_cb)(int result) = nullptr;
 
   // use only Arduino SPI functions.
+  void writeRect_async(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
   void writeRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
   void writeRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
   void writeRect_SPI_transfer_buf(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);

@@ -11,7 +11,7 @@
 #include "stm32h7xx_hal_dcmi.h"
 
 #ifndef WIRE_INTERFACES_COUNT
-#define WIRE_INTERFACES_COUNT 1
+#define WIRE_INTERFACES_COUNT 2
 #endif
 
 extern "C" {

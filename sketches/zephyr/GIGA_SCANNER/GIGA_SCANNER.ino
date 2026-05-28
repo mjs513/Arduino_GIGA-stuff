@@ -9,13 +9,17 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#if defined(ARDUINO_NANO_BLE) || defined(ARDUINO_GIGA_R1)
+#if defined(ARDUINO_NANO_BLE) || defined(ARDUINO_GIGA_R1) || defined(ARDUINO_UNO_Q)
 #define WIRE_INTERFACES_COUNT 2
 #elif defined(ARDUINO_PORTENTA_H7)
 #define WIRE_INTERFACES_COUNT 3
 #endif
 void printKnownChips(byte address);
 void scan(TwoWire &myport);
+
+#ifndef WIRE_INTERFACES_COUNT
+#define WIRE_INTERFACES_COUNT 1
+#endif
 
 void setup() {
 #if WIRE_INTERFACES_COUNT >= 1

@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "Arduino_GigaDisplay.h"
+#include "SDRAM.h"
 
 Display display;
 
@@ -8,36 +9,6 @@ uint16_t color_table[] = {
   RGB565_WHITE, RGB565_ORANGE, RGB565_GREENYELLOW, RGB565_PINK
 };
 uint8_t color_index = 0;
-
-// Lets try adding a thread that blinks pins...
-#define STACKSIZE 1024
-#define PRIORITY 7
-#define SLEEPTIME 10
-#define LED_BLINK_COUNT 32
-#define BLINK_PIN 2
-
-K_THREAD_STACK_DEFINE(blink_pins_thread_stack, STACKSIZE);
-static struct k_thread blink_pins_thread_data;
-
-void blink_pins_thread(void *dummy1, void *dummy2, void *dummy3)
-{
-	ARG_UNUSED(dummy1);
-	ARG_UNUSED(dummy2);
-	ARG_UNUSED(dummy3);
-
-	Serial.print("thread_a: thread started \n");
-
-	while (1)
-	{
-    static uint8_t pin_state = 0;
-    static uint8_t loop_count = 0;
-    pin_state ^=1;
-    digitalWrite(BLINK_PIN, pin_state);
-    loop_count++;
-    if ((loop_count & (LED_BLINK_COUNT - 1)) == 0) digitalWrite(LED_BUILTIN, (loop_count  & LED_BLINK_COUNT)? HIGH : LOW);
-  	k_msleep(SLEEPTIME);
-  }
-}
 
 
 
@@ -72,30 +43,23 @@ void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
 }
 
 void setup() {
+  printk("setup called\n");
   while (!Serial && millis() < 5000)
     ;
   Serial.begin(115200);
 
-  if (!display.begin()) {
+  bool display_started; 
+  if (!(display_started = display.begin())) {
     Serial.println("Failed to start display");
   };
+  printk("After display.begin() %x\n", display_started);
 
   Serial.println("Display configured!!");
-  pinMode(BLINK_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // Start a thread:
-    k_thread_create(&blink_pins_thread_data, blink_pins_thread_stack,
-      K_THREAD_STACK_SIZEOF(blink_pins_thread_stack),
-      blink_pins_thread, NULL, NULL, NULL,
-      PRIORITY, 0, K_FOREVER);
-  k_thread_name_set(&blink_pins_thread_data, "blink pins");
-
-	k_thread_start(&blink_pins_thread_data);
-
-
-
+  printk("Before getrameBuffer\n");
   void* FB =  display.getFrameBuffer();
+  printk("\tFB: %p\n", FB);
   if (FB == nullptr){
     Serial.println("Memory not allocated successfully." );
     while(1){}
@@ -103,12 +67,21 @@ void setup() {
   //Allocate memory to the framebuffer
   uint32_t sizeof_framebuffer = 2 * 160 * 160;
   void* ptrFB = malloc(sizeof_framebuffer);
+  printk("\tptrFB: %p %u\n", ptrFB, sizeof_framebuffer);
+  if (ptrFB == nullptr) {
+      SDRAM.begin();
+      ptrFB = (uint16_t*)SDRAM.malloc(sizeof_framebuffer);
+
+      printk("\tptrFB SDRAM: %p\n", ptrFB);
+  }
   // Cast the void pointer to an int pointer to use it
   uint8_t* frameBuffer = static_cast<uint8_t*>(ptrFB);
 
+  printk("Before setFrameDesc\n");
   display.setFrameDesc(160, 160, 160, sizeof_framebuffer);
+  printk("After setFrameDesc\n");
   display.startFrameBuffering();
-
+  printk("After startFrameBuffering\n");
   fillScreen(RGB565_DARKGREY);
 
   for (int x = 0; x < 480; x += 160) {

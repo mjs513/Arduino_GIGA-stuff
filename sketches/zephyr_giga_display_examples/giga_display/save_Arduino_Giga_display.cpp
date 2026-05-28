@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright 2025 Arduino SA
  *
@@ -145,3 +146,4 @@ void Display::endFrameBuffering() {
 
 }
 
+#endif

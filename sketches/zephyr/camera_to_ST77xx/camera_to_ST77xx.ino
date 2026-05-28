@@ -9,7 +9,7 @@ Camera cam;
 #include <zephyr/drivers/video.h>
 #include <zephyr/drivers/video-controls.h>
 
-#ifdef ARDUINO_PORTENTA_H7
+#if defined(ARDUINO_PORTENTA_H7) || defined(ARDUINO_PORTENTA_H7_M7)
 #define TFT_DC 4
 #define TFT_CS 2
 #define TFT_RST 3
@@ -88,6 +88,7 @@ void setup() {
 
   Serial.println("call cam.begin");
 
+#if 0
   uint8_t camera_count = 1;
   if ((camera_count = cam.getDTCameraCount()) > 1) {
     Serial.print("Camera count: ");
@@ -102,13 +103,13 @@ void setup() {
     while ((ich = Serial.read()) != -1) {};
     cam.setDTCameraIndex(camera_index);
   }
-  
+  #endif
   if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
   }
   Serial.println("Camera started");
-  cam.setVerticalFlip(false);
-  cam.setHorizontalMirror(false);
+  //cam.setVerticalFlip(false);
+  //cam.setHorizontalMirror(false);
 
   // Quick and dirty test to see if we can talk to the new stuff in camera.
 #if 0
@@ -138,7 +139,7 @@ void loop() {
   FrameBuffer fb;
   //Serial.print("Call grabFrame");
   bool frame_received = cam.grabFrame(fb);
-  //Serial.println(frame_received? " true" : " false");
+  Serial.println(frame_received? " true" : " false");
   if (frame_received) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     uint32_t start_time = micros();

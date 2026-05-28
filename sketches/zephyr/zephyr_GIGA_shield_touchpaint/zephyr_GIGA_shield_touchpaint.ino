@@ -99,6 +99,11 @@ void setup(void) {
   currentcolor = GC9A01A_RED;
   Serial.print("GFX Rotation: ");
   Serial.println(display.getRotation());
+
+  rgb.on(((paint_colors[current_color_index] >> 8) & 0xf8) >> 4,
+         ((paint_colors[current_color_index] >> 5) & 0xfc) >> 4,
+         ((paint_colors[current_color_index] << 3) & 0xf8) >> 4);
+
 }
 
 void convertRawTouchyByRotation(int xRaw, int yRaw, int &touch_x, int &touch_y) {

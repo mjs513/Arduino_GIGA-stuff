@@ -15,6 +15,7 @@
 
 #include "GigaDisplayRGB.h"
 #include "Arduino_GigaDisplayTouch.h"
+
 Arduino_GigaDisplayTouch touchDetector;
 
 GigaDisplayRGB rgb;  //create rgb object
@@ -57,7 +58,9 @@ void setup(void) {
 void loop() {
   uint8_t contacts;
   GDTpoint_t points[5];
-  contacts = touchDetector.getTouchPoints(points, 50);
+  int touch_x, touch_y;
+
+  contacts = touchDetector.getTouchPoints(points);
 
   if (contacts == 0) {
     rgb.off();
@@ -66,20 +69,9 @@ void loop() {
   rgb.on(0, 32, 0);
 
   // Retrieve a point
-  int touch_x = points[0].x;
-  int touch_y = points[0].y;
+  touch_x = points[0].x;
+  touch_y = points[0].y;
 
   Serial.print("X = "); Serial.print(touch_x);
   Serial.print("\tY = "); Serial.println(touch_y);
-  //printk("X = %d Y= %d\n", touch_x, touch_y);
- 
-  // Scale from ~0->4000 to display.width using the calibration #'s
-  //  touch_x = map(touch_x, TS_MINX, TS_MAXX, 0, display.width());
-  //  touch_y = map(touch_y, TS_MINY, TS_MAXY, 0, display.height());
-
-  /*
-  Serial.print("("); Serial.print(touch_x);
-  Serial.print(", "); Serial.print(touch_y);
-  Serial.println(")");
-  */
 }
